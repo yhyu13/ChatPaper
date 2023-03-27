@@ -226,29 +226,49 @@ class Reader:
                     method_key = parse_key
                     break
 
-            if method_key != '':
-                text = ''
-                method_text = ''
-                summary_text = ''
-                summary_text += "<summary>" + chat_summary_text
-                # methods                
-                method_text += paper.section_text_dict[method_key]
-                text = summary_text + "\n\n<Methods>:\n\n" + method_text
-                chat_method_text = ""
-                try:
-                    chat_method_text = self.chat_method(text=text)
-                except Exception as e:
-                    print("method_error:", e)
-                    if "maximum context" in str(e):
-                        current_tokens_index = str(e).find("your messages resulted in") + len(
-                            "your messages resulted in") + 1
-                        offset = int(str(e)[current_tokens_index:current_tokens_index + 4])
-                        method_prompt_token = offset + 800 + 150
-                        chat_method_text = self.chat_method(text=text, method_prompt_token=method_prompt_token)
-                htmls.append(chat_method_text)
-            else:
-                chat_method_text = ''
-            htmls.append("\n" * 4)
+            # yuhang : use title if not 'method' section is found
+            text = ''
+            method_text = ''
+            summary_text = ''
+            summary_text += "<summary>" + chat_summary_text
+            # methods
+            method_text += paper.section_text_dict[method_key] if method_key != '' else paper.title
+            text = summary_text + "\n\n<Methods>:\n\n" + method_text
+            chat_method_text = ""
+            try:
+                chat_method_text = self.chat_method(text=text)
+            except Exception as e:
+                print("method_error:", e)
+                if "maximum context" in str(e):
+                    current_tokens_index = str(e).find("your messages resulted in") + len(
+                        "your messages resulted in") + 1
+                    offset = int(str(e)[current_tokens_index:current_tokens_index + 4])
+                    method_prompt_token = offset + 800 + 150
+                    chat_method_text = self.chat_method(text=text, method_prompt_token=method_prompt_token)
+            htmls.append(chat_method_text)
+
+            # if method_key != '':
+            #     text = ''
+            #     method_text = ''
+            #     summary_text = ''
+            #     summary_text += "<summary>" + chat_summary_text
+            #     # methods
+            #     method_text += paper.section_text_dict[method_key]
+            #     text = summary_text + "\n\n<Methods>:\n\n" + method_text
+            #     chat_method_text = ""
+            #     try:
+            #         chat_method_text = self.chat_method(text=text)
+            #     except Exception as e:
+            #         print("method_error:", e)
+            #         if "maximum context" in str(e):
+            #             current_tokens_index = str(e).find("your messages resulted in") + len("your messages resulted in")+1
+            #             offset = int(str(e)[current_tokens_index:current_tokens_index+4])
+            #             method_prompt_token = offset+800+150
+            #             chat_method_text = self.chat_method(text=text, method_prompt_token=method_prompt_token)
+            #     htmls.append(chat_method_text)
+            # else:
+            #     chat_method_text = ''
+            htmls.append("\n"*4)
 
             # 第三步总结全文，并打分：
             conclusion_key = ''
@@ -285,11 +305,15 @@ class Reader:
             # # 整合成一个文件，打包保存下来。
             date_str = str(datetime.datetime.now())[:13].replace(' ', '-')
             export_path = os.path.join(self.root_path, 'export')
+
+            if parser.output_dir != '.':
+                export_path = parser.output_dir
             if not os.path.exists(export_path):
                 os.makedirs(export_path)
+
             mode = 'w' if paper_index == 0 else 'a'
-            file_name = os.path.join(export_path,
-                                     date_str + '-' + self.validateTitle(paper.title[:80]) + "." + self.file_format)
+            file_name = os.path.join(export_path, date_str+'-'+self.validateTitle(paper.title[:80])+"."+self.file_format)
+            print(f'save to {file_name}')
             self.export_to_markdown("\n".join(htmls), file_name=file_name, mode=mode)
 
             # file_name = os.path.join(export_path, date_str+'-'+self.validateTitle(paper.title)+".md")
@@ -523,6 +547,7 @@ if __name__ == '__main__':
                         help="save image? It takes a minute or two to save a picture! But pretty")
     parser.add_argument("--file_format", type=str, default='md', help="导出的文件格式，如果存图片的话，最好是md，如果不是的话，txt的不会乱")
     parser.add_argument("--language", type=str, default='zh', help="The other output lauguage is English, is en")
+    parser.add_argument("--output_dir", type=str, default='.', help="The other output directory")
 
     paper_args = PaperParams(**vars(parser.parse_args()))
     import time
