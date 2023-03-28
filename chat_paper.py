@@ -306,8 +306,9 @@ class Reader:
             date_str = str(datetime.datetime.now())[:13].replace(' ', '-')
             export_path = os.path.join(self.root_path, 'export')
 
-            if parser.output_dir != '.':
-                export_path = parser.output_dir
+            if args.output_dir != '.':
+                export_path = args.output_dir
+
             if not os.path.exists(export_path):
                 os.makedirs(export_path)
 
