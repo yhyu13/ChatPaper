@@ -7,7 +7,8 @@ import locale
 def run_chatpaper_pdf(sender, data):
 
     pdf_path = dpg.get_value("pdf_input")
-    if not pdf_path.endswith('.pdf'):
+    pdf_path = pdf_path.replace("\\", "/")
+    if not pdf_path.endswith('.pdf') and not pdf_path.endswith('/'):
         pdf_path += '.pdf'
     pdf_dir = os.path.split(pdf_path)[0]
 
