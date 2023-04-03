@@ -28,6 +28,8 @@ PaperParams = namedtuple(
         "save_image",
         "file_format",
         "language",
+        "output_dir",
+        "recursive"
     ],
 )
 
@@ -191,7 +193,7 @@ class Reader:
 
         return image_url
 
-    def summary_with_chat(self, paper_list):
+    def summary_with_chat(self, paper_list, args):
         htmls = []
         for paper_index, paper in enumerate(paper_list):
             # 第一步先用title，abs，和introduction进行总结。
@@ -208,10 +210,10 @@ class Reader:
             except Exception as e:
                 print("summary_error:", e)
                 if "maximum context" in str(e):
-                    current_tokens_index = str(e).find("your messages resulted in") + len(
-                        "your messages resulted in") + 1
-                    offset = int(str(e)[current_tokens_index:current_tokens_index + 4])
-                    summary_prompt_token = offset + 1000 + 150
+                    numbers = [int(word) for word in str(e).split() if word.isdigit()]
+                    assert len(numbers) == 2
+                    offset = numbers[1] - numbers[0]
+                    summary_prompt_token = offset + 800 + 150
                     chat_summary_text = self.chat_summary(text=text, summary_prompt_token=summary_prompt_token)
 
             htmls.append('## Paper:' + str(paper_index + 1))
@@ -240,34 +242,13 @@ class Reader:
             except Exception as e:
                 print("method_error:", e)
                 if "maximum context" in str(e):
-                    current_tokens_index = str(e).find("your messages resulted in") + len(
-                        "your messages resulted in") + 1
-                    offset = int(str(e)[current_tokens_index:current_tokens_index + 4])
+                    numbers = [int(word) for word in str(e).split() if word.isdigit()]
+                    assert len(numbers) == 2
+                    offset = numbers[1] - numbers[0]
                     method_prompt_token = offset + 800 + 150
                     chat_method_text = self.chat_method(text=text, method_prompt_token=method_prompt_token)
             htmls.append(chat_method_text)
 
-            # if method_key != '':
-            #     text = ''
-            #     method_text = ''
-            #     summary_text = ''
-            #     summary_text += "<summary>" + chat_summary_text
-            #     # methods
-            #     method_text += paper.section_text_dict[method_key]
-            #     text = summary_text + "\n\n<Methods>:\n\n" + method_text
-            #     chat_method_text = ""
-            #     try:
-            #         chat_method_text = self.chat_method(text=text)
-            #     except Exception as e:
-            #         print("method_error:", e)
-            #         if "maximum context" in str(e):
-            #             current_tokens_index = str(e).find("your messages resulted in") + len("your messages resulted in")+1
-            #             offset = int(str(e)[current_tokens_index:current_tokens_index+4])
-            #             method_prompt_token = offset+800+150
-            #             chat_method_text = self.chat_method(text=text, method_prompt_token=method_prompt_token)
-            #     htmls.append(chat_method_text)
-            # else:
-            #     chat_method_text = ''
             htmls.append("\n"*4)
 
             # 第三步总结全文，并打分：
@@ -293,9 +274,9 @@ class Reader:
             except Exception as e:
                 print("conclusion_error:", e)
                 if "maximum context" in str(e):
-                    current_tokens_index = str(e).find("your messages resulted in") + len(
-                        "your messages resulted in") + 1
-                    offset = int(str(e)[current_tokens_index:current_tokens_index + 4])
+                    numbers = [int(word) for word in str(e).split() if word.isdigit()]
+                    assert len(numbers) == 2
+                    offset = numbers[1] - numbers[0]
                     conclusion_prompt_token = offset + 800 + 150
                     chat_conclusion_text = self.chat_conclusion(text=text,
                                                                 conclusion_prompt_token=conclusion_prompt_token)
@@ -522,7 +503,7 @@ def chat_paper_main(args):
         print("------------------paper_num: {}------------------".format(len(paper_list)))        
 
         [print(paper_index, paper_name.path.split('\\')[-1]) for paper_index, paper_name in enumerate(paper_list)]
-        reader1.summary_with_chat(paper_list=paper_list)
+        reader1.summary_with_chat(paper_list=paper_list, args=args)
     else:
         reader1 = Reader(key_word=args.key_word,
                          query=args.query,
@@ -533,7 +514,7 @@ def chat_paper_main(args):
         reader1.show_info()
         filter_results = reader1.filter_arxiv(max_results=args.max_results)
         paper_list = reader1.download_pdf(filter_results)
-        reader1.summary_with_chat(paper_list=paper_list)
+        reader1.summary_with_chat(paper_list=paper_list, args=args)
 
 
 if __name__ == '__main__':
