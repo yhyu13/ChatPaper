@@ -508,13 +508,19 @@ def chat_paper_main(args):
         if args.pdf_path.endswith(".pdf"):
             paper_list.append(Paper(path=args.pdf_path))
         else:
-            for root, dirs, files in os.walk(args.pdf_path):
-                print("root:", root, "dirs:", dirs, 'files:', files)  # 当前目录路径
-                for filename in files:
-                    # 如果找到PDF文件，则将其复制到目标文件夹中
+            if args.recursive:
+                for root, dirs, files in os.walk(args.pdf_path):
+                    print("root:", root, "dirs:", dirs, 'files:', files) #当前目录路径
+                    for filename in files:
+                        # 如果找到PDF文件，则将其复制到目标文件夹中
+                        if filename.endswith(".pdf"):
+                            paper_list.append(Paper(path=os.path.join(root, filename)))
+            else:
+                for filename in os.listdir(args.pdf_path):
                     if filename.endswith(".pdf"):
-                        paper_list.append(Paper(path=os.path.join(root, filename)))
-        print("------------------paper_num: {}------------------".format(len(paper_list)))
+                        paper_list.append(Paper(path=os.path.join(args.pdf_path, filename)))
+        print("------------------paper_num: {}------------------".format(len(paper_list)))        
+
         [print(paper_index, paper_name.path.split('\\')[-1]) for paper_index, paper_name in enumerate(paper_list)]
         reader1.summary_with_chat(paper_list=paper_list)
     else:
@@ -549,6 +555,7 @@ if __name__ == '__main__':
     parser.add_argument("--file_format", type=str, default='md', help="导出的文件格式，如果存图片的话，最好是md，如果不是的话，txt的不会乱")
     parser.add_argument("--language", type=str, default='zh', help="The other output lauguage is English, is en")
     parser.add_argument("--output_dir", type=str, default='.', help="The other output directory")
+    parser.add_argument("--recursive", default=False, help="Recurse pdf dir or not")
 
     paper_args = PaperParams(**vars(parser.parse_args()))
     import time
