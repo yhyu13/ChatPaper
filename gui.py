@@ -13,7 +13,7 @@ def run_chatpaper_pdf(sender, data):
     pdf_dir = os.path.split(pdf_path)[0]
 
     # Do some work in the './repo' directory
-    cmds = ['python', 'chat_paper.py', '--pdf_path', f'{pdf_path}', '--output_dir', f'{pdf_dir}']
+    cmds = ['python', 'chat_paper.py', '--pdf_path', f'''"{pdf_path}"''', '--output_dir', f'''"{pdf_dir}"''']
     cmd = ' '.join(cmds)
     print(f'Run \n cmd:{cmd}')
 
@@ -24,19 +24,11 @@ def run_chatpaper_pdf(sender, data):
 
     print("invoke_chatpaper...")
     # Read the output in real-time
-    while True:
-        output = process.stdout.readline()
-        if output == b'' and process.poll() is not None:
-            break
-        if output:
-            print(output.strip().decode(system_cmd_encoding))
+    for output in process.stdout:
+        print(output.strip().decode(system_cmd_encoding))
 
-    while True:
-        output = process.stderr.readline()
-        if output == b'' and process.poll() is not None:
-            break
-        if output:
-            print(output.strip().decode(system_cmd_encoding))
+    for output in process.stderr:
+        print(output.strip().decode(system_cmd_encoding))
 
     # Wait for the process to finish and get the return code
     result = process.poll()
