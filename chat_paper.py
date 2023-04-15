@@ -64,6 +64,9 @@ class Reader:
 
         # prevent short strings from being incorrectly used as API keys.
         self.chat_api_list = [api.strip() for api in self.chat_api_list if len(api) > 20]
+        for api in self.chat_api_list:
+            if not api.startswith('sk-'):
+                raise Exception(f'{api} not start with sk-')
         self.cur_api = 0
         self.file_format = args.file_format
         if args.save_image:
