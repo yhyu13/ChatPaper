@@ -29,7 +29,8 @@ PaperParams = namedtuple(
         "file_format",
         "language",
         "output_dir",
-        "recursive"
+        "recursive",
+        "obsidian_custom_naming"
     ],
 )
 
@@ -201,10 +202,10 @@ class Reader:
         for paper_index, paper in enumerate(paper_list):
             # 第一步先用title，abs，和introduction进行总结。
             text = ''
-            text += 'Title:' + paper.title
-            text += 'Url:' + paper.url
-            text += 'Abstract:' + paper.abs
-            text += 'Paper_info:' + paper.section_text_dict['paper_info']
+            text += 'Title:' + paper.title + "\n"
+            text += 'Url:' + paper.url + "\n"
+            text += 'Abstract:' + paper.abs + "\n"
+            text += 'Paper_info:' + paper.section_text_dict['paper_info'] + "\n"
             # intro
             text += list(paper.section_text_dict.values())[0]
             chat_summary_text = ""
@@ -297,7 +298,14 @@ class Reader:
                 os.makedirs(export_path)
 
             mode = 'w' if paper_index == 0 else 'a'
-            file_name = os.path.join(export_path, date_str+'-'+self.validateTitle(paper.title[:80])+"."+self.file_format)
+            if args.obsidian_custom_naming:
+                # Define the new file name format
+                new_filename = os.path.basename(paper.path).replace('[', '【').replace(']', '】')
+                # Rename the file
+                os.rename(paper.path, os.path.join(os.path.dirname(paper.path), new_filename))
+                file_name = os.path.join(export_path, os.path.splitext(new_filename)[0]+"."+self.file_format)
+            else:
+                file_name = os.path.join(export_path, date_str+'-'+self.validateTitle(paper.title[:80])+"."+self.file_format)
             print(f'save to {file_name}')
             self.export_to_markdown("\n".join(htmls), file_name=file_name, mode=mode)
 
@@ -540,6 +548,7 @@ if __name__ == '__main__':
     parser.add_argument("--language", type=str, default='zh', help="The other output lauguage is English, is en")
     parser.add_argument("--output_dir", type=str, default='.', help="The other output directory")
     parser.add_argument("--recursive", default=False, help="Recurse pdf dir or not")
+    parser.add_argument("--obsidian_custom_naming", default=True, help="Replace [] with 【】to be able to search in Obsidian, also overwrite output file name to pdf name")
 
     paper_args = PaperParams(**vars(parser.parse_args()))
     import time
