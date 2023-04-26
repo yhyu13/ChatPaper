@@ -30,7 +30,9 @@ PaperParams = namedtuple(
         "language",
         "output_dir",
         "recursive",
-        "obsidian_custom_naming"
+        "obsidian_custom_naming",
+        "output_alongside_paper",
+        "ignore_already_proceeded"
     ],
 )
 
@@ -303,6 +305,8 @@ class Reader:
                 new_filename = os.path.basename(paper.path).replace('[', '【').replace(']', '】')
                 # Rename the file
                 os.rename(paper.path, os.path.join(os.path.dirname(paper.path), new_filename))
+                if args.output_alongside_paper:
+                    export_path = os.path.dirname(paper.path)
                 file_name = os.path.join(export_path, os.path.splitext(new_filename)[0]+"."+self.file_format)
             else:
                 file_name = os.path.join(export_path, date_str+'-'+self.validateTitle(paper.title[:80])+"."+self.file_format)
@@ -478,6 +482,20 @@ class Reader:
         print(f"Sort: {self.sort}")
 
 
+def chat_paper_should_add(args, root, filename):
+    if filename.endswith(".pdf"):
+        bShouldAdd = True
+        if args.obsidian_custom_naming and args.ignore_already_proceeded:
+            summary_file_path = os.path.join(root, os.path.splitext(filename)[0]+"."+args.file_format)
+            if os.path.exists(summary_file_path):
+                print(f'{root}/{filename} already has {summary_file_path}, ignore!')
+                bShouldAdd = False
+            else:
+                print(f'{root}/{filename} does not have {summary_file_path}, add!')
+        return bShouldAdd
+    else:
+        return False
+
 def chat_paper_main(args):
     # 创建一个Reader对象，并调用show_info方法
     if args.sort == 'Relevance':
@@ -504,13 +522,21 @@ def chat_paper_main(args):
                 for root, dirs, files in os.walk(args.pdf_path):
                     print("root:", root, "dirs:", dirs, 'files:', files) #当前目录路径
                     for filename in files:
-                        # 如果找到PDF文件，则将其复制到目标文件夹中
-                        if filename.endswith(".pdf"):
-                            paper_list.append(Paper(path=os.path.join(root, filename)))
+                        if chat_paper_should_add(args, root, filename):
+                            try:
+                                paper_list.append(Paper(path=os.path.join(root, filename)))
+                            except Exception as e:
+                                print(f"Error occurred when appending {filename} to paper_list: {e}")
+                                return
             else:
                 for filename in os.listdir(args.pdf_path):
-                    if filename.endswith(".pdf"):
-                        paper_list.append(Paper(path=os.path.join(args.pdf_path, filename)))
+                    if chat_paper_should_add(args, args.pdf_path, filename):
+                        try:
+                            paper_list.append(Paper(path=os.path.join(args.pdf_path, filename)))
+                        except Exception as e:
+                            print(f"Error occurred when appending {filename} to paper_list: {e}")
+                            return
+
         print("------------------paper_num: {}------------------".format(len(paper_list)))        
 
         [print(paper_index, paper_name.path.split('\\')[-1]) for paper_index, paper_name in enumerate(paper_list)]
@@ -549,6 +575,9 @@ if __name__ == '__main__':
     parser.add_argument("--output_dir", type=str, default='.', help="The other output directory")
     parser.add_argument("--recursive", default=False, help="Recurse pdf dir or not")
     parser.add_argument("--obsidian_custom_naming", default=True, help="Replace [] with 【】to be able to search in Obsidian, also overwrite output file name to pdf name")
+    parser.add_argument("--output_alongside_paper", default=True, help="Only valid when obsidian_custom_naming equals to true, will output .md in the same directory as the paper")
+    parser.add_argument("--ignore_already_proceeded", default=True, help="Only valid when obsidian_custom_naming equals to true, will ignore papers with existing .md")
+
 
     paper_args = PaperParams(**vars(parser.parse_args()))
     import time

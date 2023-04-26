@@ -12,8 +12,17 @@ def run_chatpaper_pdf(sender, data):
         pdf_path += '.pdf'
     pdf_dir = os.path.split(pdf_path)[0]
 
-    # Do some work in the './repo' directory
+    # Get the value of the checkbox
+    recursive = dpg.get_value("recursive_checkbox")
     cmds = ['python', 'chat_paper.py', '--pdf_path', f'''{pdf_path}''', '--output_dir', f'''{pdf_dir}''']
+
+    custom_flag = ['--obsidian_custom_naming', '1' , '--output_alongside_paper', '1', '--ignore_already_proceeded', '1']
+    cmds += custom_flag
+
+    # Add the --recursive flag if the checkbox is checked
+    if recursive:
+        cmds += ['--recursive', '1']
+    
     cmd = ' '.join(cmds)
     print(f'Run \n cmd:{cmd}')
 
@@ -68,6 +77,9 @@ if __name__ == '__main__':
         dpg.add_text("你好，世界！")  # Chinese text
         dpg.add_text("Enter PDF file path:")
         dpg.add_input_text(tag="pdf_input", width=800)
+        # Add the checkbox
+        dpg.add_checkbox(label="Recursive", default_value=False, tag="recursive_checkbox")
+
 
         dpg.add_text("Cmd:")
         dpg.add_input_text(tag="cmd_out", width=800)
