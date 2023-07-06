@@ -1,0 +1,1 @@
+python chat_paper.py --pdf_path /home/hangyu5/Documents/Git-repoMy/AIResearchVault/document/ --output_dir /home/hangyu5/Documents/Git-repoMy/AIResearchVault/document --obsidian_custom_naming 1 --output_alongside_paper 1 --ignore_already_proceeded 1 --recursive 1
