@@ -304,7 +304,10 @@ class Reader:
                 # Define the new file name format
                 new_filename = os.path.basename(paper.path).replace('[', '【').replace(']', '】')
                 # Rename the file
-                os.rename(paper.path, os.path.join(os.path.dirname(paper.path), new_filename))
+                new_path = os.path.join(os.path.dirname(paper.path), new_filename)
+                if os.path.exists(new_path):
+                    os.remove(new_path)
+                os.rename(paper.path, new_path)
                 if args.output_alongside_paper:
                     export_path = os.path.dirname(paper.path)
                 file_name = os.path.join(export_path, os.path.splitext(new_filename)[0]+"."+self.file_format)
@@ -409,7 +412,7 @@ class Reader:
         print("prompt_token_used:", response.usage.prompt_tokens,
               "completion_token_used:", response.usage.completion_tokens,
               "total_token_used:", response.usage.total_tokens)
-        print("response_time:", response.response_ms / 1000.0, 's')
+        print("response_time:", response.response_ms / 1000.0 if response.response_ms is not None else 'N/A', 's')
         return result
 
     @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
@@ -466,7 +469,7 @@ class Reader:
         print("prompt_token_used:", response.usage.prompt_tokens,
               "completion_token_used:", response.usage.completion_tokens,
               "total_token_used:", response.usage.total_tokens)
-        print("response_time:", response.response_ms / 1000.0, 's')
+        print("response_time:", response.response_ms / 1000.0 if response.response_ms is not None else 'N/A', 's')
         return result
 
     def export_to_markdown(self, text, file_name, mode='w'):
