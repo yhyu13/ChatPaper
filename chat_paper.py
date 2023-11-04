@@ -76,7 +76,7 @@ class Reader:
             self.gitee_key = self.config.get('Gitee', 'api')
         else:
             self.gitee_key = ''
-        self.max_token_num = 4096
+        self.max_token_num = int(4096*3.5)
         self.encoding = tiktoken.get_encoding("gpt2")
 
     def get_arxiv(self, max_results=30):
@@ -350,7 +350,7 @@ class Reader:
                  """.format(self.language, self.language)},
         ]
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-16k",
             # prompt需要用英语替换，少占用token。
             messages=messages,
         )
@@ -361,7 +361,7 @@ class Reader:
         print("prompt_token_used:", response.usage.prompt_tokens,
               "completion_token_used:", response.usage.completion_tokens,
               "total_token_used:", response.usage.total_tokens)
-        print("response_time:", response.response_ms / 1000.0, 's')
+        print("response_time:", response.response_ms / 1000.0 if response.response_ms is not None else 'N/A', 's')
         return result
 
     @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
@@ -399,7 +399,7 @@ class Reader:
                  """.format(self.language, self.language)},
         ]
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-16k",
             messages=messages,
         )
         result = ''
@@ -456,7 +456,7 @@ class Reader:
         ]
 
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-16k",
             messages=messages,
         )
         result = ''
